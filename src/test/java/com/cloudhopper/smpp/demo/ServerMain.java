@@ -172,10 +172,12 @@ public class ServerMain {
             if (pduRequest.getCommandId() == SmppConstants.CMD_ID_SUBMIT_SM) {
                 SubmitSm mt = (SubmitSm) pduRequest;
 
+                logger.debug(pduRequest.toString());
+
                 SubmitSmResp response = mt.createResponse();
                 int messageId = getMessageId();
                 response.setMessageId(""+ messageId);
-                logger.info("messageId: " + messageId);
+                logger.debug("messageId: " + messageId);
 
 //                if (new Date().getSeconds() == 0 || new Date().getSeconds() == 1) {
 //                    logger.warn("Simulating timeout on messageId: " + messageId);
