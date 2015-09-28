@@ -83,6 +83,8 @@ public class ServerMain {
             }
         });
 
+        Db db = Db.get();
+
         // create a server configuration
         SmppServerConfiguration configuration = new SmppServerConfiguration();
         configuration.setPort(Integer.parseInt(args[0]));
@@ -96,7 +98,7 @@ public class ServerMain {
         configuration.setJmxEnabled(true);
 
         // create a server, start it up
-        DefaultSmppServer smppServer = new DefaultSmppServer(configuration, new DefaultSmppServerHandler(), executor, monitorExecutor);
+        DefaultSmppServer smppServer = new DefaultSmppServer(configuration, new DefaultSmppServerHandler(db), executor, monitorExecutor);
 
         logger.info("Starting SMPP server...");
         new TrafficWatcherThread().start();
@@ -108,12 +110,19 @@ public class ServerMain {
 
         logger.info("Stopping SMPP server...");
         smppServer.stop();
+        db.stop();
         logger.info("SMPP server stopped");
 
         logger.info("Server counters: {}", smppServer.getCounters());
     }
 
     public static class DefaultSmppServerHandler implements SmppServerHandler {
+
+        private final Db db;
+
+        public DefaultSmppServerHandler(Db db) {
+            this.db = db;
+        }
 
         @Override
         public void sessionBindRequested(Long sessionId, SmppSessionConfiguration sessionConfiguration, final BaseBind bindRequest) throws SmppProcessingException {
@@ -128,7 +137,7 @@ public class ServerMain {
         public void sessionCreated(Long sessionId, SmppServerSession session, BaseBindResp preparedBindResponse) throws SmppProcessingException {
             logger.info("Session created: {}", session);
             // need to do something it now (flag we're ready)
-            session.serverReady(new TestSmppSessionHandler(session));
+            session.serverReady(new TestSmppSessionHandler(session, db));
         }
 
         @Override
@@ -153,9 +162,11 @@ public class ServerMain {
     public static class TestSmppSessionHandler extends DefaultSmppSessionHandler {
 
         private WeakReference<SmppSession> sessionRef;
+        private Db db;
 
-        public TestSmppSessionHandler(SmppSession session) {
+        public TestSmppSessionHandler(SmppSession session, Db db) {
             this.sessionRef = new WeakReference<SmppSession>(session);
+            this.db = db;
         }
 
         @Override
@@ -176,8 +187,14 @@ public class ServerMain {
 
                 SubmitSmResp response = mt.createResponse();
                 int messageId = getMessageId();
-                response.setMessageId(""+ messageId);
+                response.setMessageId("" + messageId);
                 logger.debug("messageId: " + messageId);
+
+                try {
+                    db.log(mt);
+                } catch (Exception ex) {
+                    logger.error("Could not log", ex);
+                }
 
 //                if (new Date().getSeconds() == 0 || new Date().getSeconds() == 1) {
 //                    logger.warn("Simulating timeout on messageId: " + messageId);
@@ -211,7 +228,9 @@ public class ServerMain {
                 } catch (InterruptedException e) {
                 }
                 int trafficPerSecond = requestCounter.getAndSet(0);
-                logger.warn("Traffic per second : " + trafficPerSecond);
+                if (trafficPerSecond > 0) {
+                    logger.warn("Traffic per second : " + trafficPerSecond);
+                }
             }
         }
     }
