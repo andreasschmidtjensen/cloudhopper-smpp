@@ -200,12 +200,12 @@ public class ServerMain {
                     logger.error("Could not log", ex);
                 }
 
-//                if (Math.random() < 0.01) {
-//                    logger.warn("Simulating timeout on messageId: " + messageId);
-//                    try {
-//                        Thread.sleep(60000);
-//                    } catch (Exception e) { }
-//                }
+                if (Math.random() < 0.01) {
+                    logger.warn("Simulating timeout on messageId: " + messageId);
+                    try {
+                        Thread.sleep(60000);
+                    } catch (Exception e) { }
+                }
 
 
                 return response;

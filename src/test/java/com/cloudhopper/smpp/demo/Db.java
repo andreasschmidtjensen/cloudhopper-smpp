@@ -42,10 +42,10 @@ public class Db {
 
     protected static Connection getConnection() throws SQLException {
         if (connection == null) {
-            String host = "192.168.12.66";
+            String host = "127.0.0.1";
             String port = "3306";
             String database = "ch_log";
-            String username = "user";
+            String username = "usr";
             String password = "pass";
             String dbUrl = "jdbc:mysql://" + host + ":" + port + "/" + database;
             connection = DriverManager.getConnection(dbUrl, username, password);
@@ -70,22 +70,6 @@ public class Db {
 
     public void log(SubmitSm sm) {
         runner.add(sm);
-        Connection conn;
-        try {
-            conn = getConnection();
-            PreparedStatement stmt = conn.prepareStatement("INSERT INTO log (source, dest, message) values (?,?,?)");
-            int i = 1;
-            stmt.setString(i++, sm.getSourceAddress().toString());
-            stmt.setString(i++, sm.getDestAddress().toString());
-            stmt.setString(i++, new String(sm.getShortMessage(), "UTF-8"));
-
-            stmt.execute();
-
-        } catch (SQLException ex) {
-            logger.error("Could not save", ex);
-        } catch (UnsupportedEncodingException ex) {
-            logger.error("Could not save", ex);
-        }
     }
 
     DbRunner runner = new DbRunner();
@@ -102,7 +86,7 @@ public class Db {
             queue.add(sm);
         }
 
-        private SubmitSm get() {
+        private synchronized SubmitSm get() {
             return queue.poll();
         }
 
