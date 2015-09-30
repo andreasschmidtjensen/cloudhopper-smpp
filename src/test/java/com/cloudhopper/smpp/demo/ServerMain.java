@@ -20,6 +20,7 @@ package com.cloudhopper.smpp.demo;
  * #L%
  */
 
+import java.io.UnsupportedEncodingException;
 import java.lang.ref.WeakReference;
 import java.util.Date;
 import java.util.concurrent.Executors;
@@ -101,7 +102,7 @@ public class ServerMain {
         DefaultSmppServer smppServer = new DefaultSmppServer(configuration, new DefaultSmppServerHandler(db), executor, monitorExecutor);
 
         logger.info("Starting SMPP server...");
-        new TrafficWatcherThread().start();
+//        new TrafficWatcherThread().start();
         smppServer.start();
         logger.info("SMPP server started");
 
@@ -174,9 +175,9 @@ public class ServerMain {
             SmppSession session = sessionRef.get();
 
             // mimic how long processing could take on a slower smsc
-//            try {
-//                Thread.sleep(20);
-//            } catch (Exception e) { }
+            try {
+                Thread.sleep(25);
+            } catch (Exception e) { }
 
             requestCounter.incrementAndGet();
 
@@ -184,6 +185,9 @@ public class ServerMain {
                 SubmitSm mt = (SubmitSm) pduRequest;
 
                 logger.debug(pduRequest.toString());
+                try {
+                    logger.info("MESSAGE: " + new String(mt.getShortMessage(), "UTF-8"));
+                } catch (UnsupportedEncodingException ex) {}
 
                 SubmitSmResp response = mt.createResponse();
                 int messageId = getMessageId();
@@ -196,10 +200,10 @@ public class ServerMain {
                     logger.error("Could not log", ex);
                 }
 
-//                if (new Date().getSeconds() == 0 || new Date().getSeconds() == 1) {
+//                if (Math.random() < 0.01) {
 //                    logger.warn("Simulating timeout on messageId: " + messageId);
 //                    try {
-//                        Thread.sleep(120000);
+//                        Thread.sleep(60000);
 //                    } catch (Exception e) { }
 //                }
 
@@ -207,10 +211,10 @@ public class ServerMain {
                 return response;
             }
 
-//            if (Math.random() < 0.1) {
+//            if (Math.random() < 0.01) {
 //                logger.warn("Simulating enquery timeout...");
 //                try {
-//                    Thread.sleep(120000);
+//                    Thread.sleep(60000);
 //                } catch (Exception e) { }
 //            }
 
